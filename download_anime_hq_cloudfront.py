@@ -4,90 +4,6 @@ import requests
 import os
 import re
 
-def download(url,title,episode):
-
-	#check if already downloaded
-	if(os.path.exists(title+".mkv")):
-		return
-
-	#variables
-	num = 0 #counter variable
-	num_max = 0 #number of chunks to download
-
-	#create chunklist url
-	urlpoint1 = url.find("media")
-	urlpoint2 = url.find("=_")
-	key = url[(urlpoint1+6):urlpoint2]
-	chunklist = url[:urlpoint1]+"chunklist_"+key+"=.m3u8"
-
-	#download and write chunklist
-	with open("chunklist.m3u8", "wb") as file:
-		response = requests.get(chunklist)
-		file.write(response.content)
-		
-	#read number of chunks from chunklist
-	with open("chunklist.m3u8", "r") as file:
-		lines = file.read().splitlines()
-		last_chunk = lines[-2]
-		tmp = last_chunk.find("=_")
-		num_max = int(last_chunk[(tmp+2):-3])
-
-	#download video code	
-	while(True):
-		#calculate percent
-		percent = (num+1)/(num_max+1)*100
-		percent = format(percent, ".2f")
-		
-		#generate filename
-		filename = str(num)+".ts"
-		
-		#create url
-		replace = url.find("=_")
-		url = url[:replace]+"=_"+filename
-		
-		#download and write file:
-		with open(filename, "wb") as file:
-			response = requests.get(url)
-			file.write(response.content)
-		
-		#check if file is empty and abort
-		fileinfo = os.stat(filename)
-		if(fileinfo.st_size == 0):
-			os.remove(filename)
-			break
-			
-		if os.name == "nt":
-			os.system('cls')
-		else:
-			os.system('clear')
-			
-		print("Downloading Episode " + str(counter) + ":")
-		print("Downloaded chunk " + str(num+1) + " of " +  str(num_max+1) + " (" + percent + "%)")
-			
-		#increase counter
-		num = num + 1
-
-	print("Merging chunks")
-
-	#create chunklist
-	with open("chunklist.txt", "w") as file:
-		for i in range(num_max+1):
-			filename = str(i)+".ts"
-			file.write("file " + filename + "\n")
-
-	#merge to video
-	os.system('ffmpeg -loglevel panic -f concat -i chunklist.txt -c copy "' + title + '.mkv"')
-
-	print("Cleanup")
-	#cleanup
-	for i in range(num_max+1):
-		filename = str(i)+".ts"
-		os.remove(filename)
-	os.remove("chunklist.m3u8")
-	os.remove("chunklist.txt")
-		
-	print("Done")
-
 if os.name == "nt":
 	os.system('cls')
 else:
@@ -142,7 +58,7 @@ response = session.get(playlist_url)
 episode_list = response.text
 
 #download info for every episode
-counter = 1
+episode_counter = 1
 while(episode_list.find("title") != -1):
 
 	#get episode chunklist sources url
@@ -158,15 +74,60 @@ while(episode_list.find("title") != -1):
 	#get highest quality episode chunklist
 	episode_chunklist_url = session.get(episode_url)
 	episode_chunklist_url = episode_chunklist_url.text
-	episode_chunklist_url = episode_chunklist_url[(episode_chunklist_url.find("chunklist")):(episode_chunklist_url.find("=.m3u8")+6)]
-	episode_chunklist_url = episode_url[:(episode_url.find('.smil')+5)]+"/"+episode_chunklist_url
+	episode_chunklist_url = episode_chunklist_url[(episode_chunklist_url.find("CODECS=")+31):(episode_chunklist_url.find("Id=")+23)]
+	episode_chunklist_url = episode_url[:(episode_url.find('index.m3u8'))]+"/" + episode_chunklist_url
 	
-	#get first chunk of chunklist and pass to download function
+	#get chunklist
 	episode_chunklist = session.get(episode_chunklist_url)
 	episode_chunklist = episode_chunklist.text
-	episode_chunk0_url = re.search('media.*.ts', episode_chunklist)
-	episode_chunk0_url = episode_url[:(episode_url.find('.smil')+5)]+"/"+episode_chunk0_url.group()
 	
-	download(episode_chunk0_url,episode_title,counter)
-	counter = counter+1
+	#clean chunklist
+	chunks = re.findall("..\/..\/..\/.*", episode_chunklist)
 
+	episode_chunklist = ""
+	for line in chunks:
+		episode_chunklist = episode_chunklist + (episode_url[:(episode_url.find('index.m3u8'))] + line[8:]) + "\n"
+
+	#check if episode is already downloaded
+	if(os.path.exists(episode_title + ".mkv")):
+		continue
+	
+	#download episode
+	downloaded_chunks = 0
+	download_percentage = 0
+	    
+	#create tmp directory for chunks
+	if(not os.path.exists("tmp")):
+		os.mkdir("tmp")
+		
+	for url in episode_chunklist.splitlines():
+		#download chunk
+		with open("tmp/" + str(downloaded_chunks) + ".ts", "wb") as file:
+			response = requests.get(url)
+			file.write(response.content)
+			
+		downloaded_chunks = downloaded_chunks + 1
+		download_percentage = (downloaded_chunks)/(len(chunks))*100
+		download_percentage = format(download_percentage, ".2f")
+		
+		if os.name == "nt":
+			os.system('cls')
+		else:
+			os.system('clear')
+			
+		print("downloading episode " + str(episode_counter))
+		print(download_percentage)
+		
+	#create chunklist for ffmpeg
+	with open("tmp/chunklist", "w") as file:
+		for i in range(0,int(len(chunks))):
+			file.write("file '" + str(i) + ".ts'" + "\n")
+			
+	#merge to video
+	print("creating video")
+	os.system('ffmpeg -f "concat" -i "tmp/chunklist" -c copy "' + episode_title + '.mkv"')
+	
+	#cleanup
+	shutil.rmtree("tmp")
+
+	episode_counter = episode_counter + 1
