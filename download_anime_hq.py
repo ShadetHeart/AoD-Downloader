@@ -72,7 +72,7 @@ def download(url,title,episode):
 			file.write("file " + filename + "\n")
 
 	#merge to video
-	os.system("ffmpeg -loglevel panic -f concat -i chunklist.txt -c copy " + title + ".mkv")
+	os.system('ffmpeg -loglevel panic -f concat -i chunklist.txt -c copy "' + title + '.mkv"')
 
 	print("Cleanup")
 	#cleanup
