@@ -1,3 +1,5 @@
+#!/usr/bin/python3
+
 import requests
 import os
 import re
@@ -54,7 +56,7 @@ def download(url,title,episode):
 			os.remove(filename)
 			break
 			
-		os.system('cls')
+		os.system('clear')
 		print("Downloading Episode " + str(counter) + ":")
 		print("Downloaded chunk " + str(num+1) + " of " +  str(num_max+1) + " (" + percent + "%)")
 			
@@ -70,7 +72,7 @@ def download(url,title,episode):
 			file.write("file " + filename + "\n")
 
 	#merge to video
-	os.system("ffmpeg -loglevel panic -f concat -i chunklist.txt -c copy " + title + ".mkv")
+	os.system('ffmpeg -loglevel panic -f concat -i chunklist.txt -c copy "' + title + '.mkv"')
 
 	print("Cleanup")
 	#cleanup
@@ -82,7 +84,7 @@ def download(url,title,episode):
 		
 	print("Done")
 
-os.system('cls')
+os.system('clear')
 	
 #asking for login info
 username = input("Enter username: ")
