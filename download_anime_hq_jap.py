@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 import requests
 import os
 import re
@@ -70,8 +71,8 @@ def download(url,title,episode):
 			file.write("file " + filename + "\n")
 
 	#merge to video
-	print("ffmpeg -loglevel panic -f concat -i chunklist.txt -c copy " + title + ".mkv")
-	os.system("ffmpeg -loglevel panic -f concat -i chunklist.txt -c copy " + title + ".mkv")
+	print("Merge chunks to MKV")
+	os.system('ffmpeg -loglevel panic -f concat -i chunklist.txt -c copy "' + title + '.mkv"')
 
 	print("Cleanup")
 	#cleanup
