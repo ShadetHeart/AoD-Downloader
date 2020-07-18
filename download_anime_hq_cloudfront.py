@@ -3,6 +3,8 @@
 import requests
 import os
 import re
+import shutil
+
 
 if os.name == "nt":
 	os.system('cls')
