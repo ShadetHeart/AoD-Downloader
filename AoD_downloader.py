@@ -38,7 +38,7 @@ def get_playlist(session, anime_url):
 
 	#get playlist url
 	if((not sub) and ("Deutschen Stream starten" in response)):
-		playlist_start = response.find("Deutschen Stream starten")+40
+		playlist_start = response.find("Deutschen Stream starten")+41
 	else:
 		playlist_start = response.find("Japanischen Stream mit Untertiteln starten")+59
 		
