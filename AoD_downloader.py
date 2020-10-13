@@ -1,13 +1,9 @@
 #!/usr/bin/env python3
 
 import requests
-import os
 import re
-import shutil
 import configparser
 import json
-import sys
-import pprint
 from bs4 import BeautifulSoup
 from ffmpeg import FFmpeg
 
