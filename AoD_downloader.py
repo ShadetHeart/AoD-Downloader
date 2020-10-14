@@ -2,6 +2,7 @@
 
 import requests
 import re
+import os
 import configparser
 import json
 from bs4 import BeautifulSoup
@@ -15,9 +16,24 @@ class AoDDownloaderException(Exception):
 
 class AoDDownloader(object):
     signInPath = "/users/sign_in"
-    baseUrl = "https://www.anime-on-demand.de"
+    baseUrl = "https://anime-on-demand.de"
     currentPlaylist: list = None
     currentToken: str = None
+
+    class Episode(object):
+        def __init__(self, title: str, chunkList: list):
+            self.title = title
+            self.chunkList = chunkList
+
+        def __str__(self):
+            return f"Episode({self.title}, {len(self.chunkList)} chunks)"
+
+        def __repr__(self):
+            return self.__str__()
+
+        @property
+        def exists(self) -> bool:
+            os.path.exists(self.title + ".mkv")
 
     def __init__(self, username: str, password: str, dubOnly: bool = True):
         self.session = requests.Session()
@@ -36,6 +52,17 @@ class AoDDownloader(object):
                     return soupReturn
                 elif type(returnObj) == str and returnObj == "json":
                     return json.loads(response.text)
+                elif type(returnObj) == str and returnObj == "raw":
+                    return response.text
+                elif type(returnObj) == str and returnObj == "m3u":
+                    m3uResult = []
+                    for line in response.text.split("\n"):
+                        if not line.startswith('#'):
+                            if line.strip():
+                                m3uResult.append(line.strip())
+                    if not m3uResult:
+                        raise AoDDownloaderException("No m3u Content found")
+                    return m3uResult
                 else:
                     raise AoDDownloaderException(
                         "Only 'soup' and 'json' are supported return objects")
@@ -61,6 +88,24 @@ class AoDDownloader(object):
                       "user[password]": password,
                       "user[remember_me]": "0", "authenticity_token": self.token}))
         print("Login successful.")
+
+    def _parseEpisode(self, episodeData: dict) -> Episode:
+        episodeUrl = episodeData['sources'][0]['file']
+        episodeBaseUrl = episodeUrl.split('index.m3u8')[0]
+
+        episodeTitle = (episodeData['title'] + episodeData['description']
+                        ).replace(" - ", "_").replace(" ", "_").replace(",", "")
+
+        # TODO: support streamlock!
+        episodeChunkListUrl = episodeBaseUrl + \
+            self._validateResponse(
+                self.session.get(episodeUrl), returnObj="m3u")[0]  # For now only use best quality
+
+        rawChunkList = self._validateResponse(
+            self.session.get(episodeChunkListUrl), returnObj="m3u")
+        chunkList = [chunk.replace("../../../", episodeBaseUrl)
+                     for chunk in rawChunkList]
+        return self.Episode(episodeTitle, chunkList)
 
     def _setHeader(self, url: str):
         self.session.headers.update({"X-CSRF-Token": self.token, "Accept-Encoding": "gzip, deflate, br", "Accept-Language": "de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7", "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.103 Safari/537.36",
@@ -90,8 +135,11 @@ class AoDDownloader(object):
             raise AoDDownloaderException("Could not determine {lang} stream for {url}".format(
                 lang="german" if self.dubOnly else "japanese", url=animeUrl))
         playlistUrl = f"https://www.anime-on-demand.de{stream['data-playlist']}"
-        self.currentPlaylist = self._validateResponse(
+        playlistData = self._validateResponse(
             self.session.get(playlistUrl), returnObj='json').get('playlist')
+
+        self.currentPlaylist = [self._parseEpisode(
+            episodeData) for episodeData in playlistData]
 
 # def download_episode(session: requests.Session, episodeList):
 #     refactor_chunklist_url = ''
