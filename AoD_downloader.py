@@ -6,8 +6,10 @@ import os
 import configparser
 import json
 from bs4 import BeautifulSoup
-from ffmpeg import FFmpeg
-
+import asyncio
+import ffmpeg
+import tempfile
+from progress.bar import ChargingBar
 
 class AoDDownloaderException(Exception):
     def __init__(self, message):
@@ -33,7 +35,11 @@ class AoDDownloader(object):
 
         @property
         def exists(self) -> bool:
-            os.path.exists(self.title + ".mkv")
+            return os.path.exists(self.file)
+
+        @property
+        def file(self) -> str:
+            return f"downloads/{self.title}.mkv"
 
     def __init__(self, username: str, password: str, dubOnly: bool = True):
         self.session = requests.Session()
@@ -91,19 +97,56 @@ class AoDDownloader(object):
 
     def _parseEpisode(self, episodeData: dict) -> Episode:
         episodeUrl = episodeData['sources'][0]['file']
-        episodeBaseUrl = episodeUrl.split('index.m3u8')[0]
+        episodeBaseUrl = episodeUrl.split('index.m3u8')[0] + '/'
 
         episodeTitle = (episodeData['title'] + episodeData['description']
                         ).replace(" - ", "_").replace(" ", "_").replace(",", "")
 
         # TODO: support streamlock!
+        # streamlock or cloudfround differentiation
+        # if("streamlock" in episode_url):
+        #     while(quality_counter < quality_option):
+        #         episode_chunklist_url = episode_chunklist_url[(
+        #             episode_chunklist_url.find("RESOLUTION")+10):]
+        #         quality_counter = quality_counter + 1
+        #     episode_chunklist_url = episode_chunklist_url[(episode_chunklist_url.find(
+        #         "chunklist")):(episode_chunklist_url.find('.m3u8')+5)]
+        #     episode_chunklist_url = episode_url[:(
+        #         episode_url.find(".smil")+6)] + episode_chunklist_url
+        # else:
+        #     while(quality_counter < quality_option):
+        #         episode_chunklist_url = episode_chunklist_url[(
+        #             episode_chunklist_url.find("RESOLUTION")+10):]
+        #         quality_counter = quality_counter + 1
+        #     episode_chunklist_url = episode_chunklist_url[(episode_chunklist_url.find(
+        #         "CODECS=")+31):(episode_chunklist_url.find("Id=")+23)]
+        #     episode_chunklist_url = episode_url[:(
+        #         episode_url.find('index.m3u8'))]+"/" + episode_chunklist_url
+
         episodeChunkListUrl = episodeBaseUrl + \
             self._validateResponse(
                 self.session.get(episodeUrl), returnObj="m3u")[0]  # For now only use best quality
 
         rawChunkList = self._validateResponse(
             self.session.get(episodeChunkListUrl), returnObj="m3u")
-        chunkList = [chunk.replace("../../../", episodeBaseUrl)
+
+        # TODO: support streamlock!
+        # clean chunklist
+        # if("streamlock" in episode_url):
+        #     chunks = re.findall("media.*", episode_chunklist)
+        #     episode_chunklist = ""
+        #     for line in chunks:
+        #         episode_chunklist = episode_chunklist + \
+        #             (episode_url[:(episode_url.find(".smil")+6)] + line) + "\n"
+        #
+        # else:
+        #     chunks = re.findall("..\/..\/..\/.*", episode_chunklist)
+        #     episode_chunklist = ""
+        #     for line in chunks:
+        #         episode_chunklist = episode_chunklist + \
+        #             (episode_url[:(episode_url.find('index.m3u8'))
+        #                         ] + line[8:]) + "\n"
+        chunkList = [(chunk.split('?')[0].split('/')[-1], chunk.replace("../../../", episodeBaseUrl))
                      for chunk in rawChunkList]
         return self.Episode(episodeTitle, chunkList)
 
@@ -124,7 +167,7 @@ class AoDDownloader(object):
         return self.currentToken
 
     def setPlaylist(self, animeUrl):
-        if re.match("https://anime-on-demand\.de/anime/\d+", animeUrl) is None:
+        if re.match("https://(www\.)?anime-on-demand\.de/anime/\d+", animeUrl) is None:
             raise AoDDownloaderException(
                 "Given url does not match a playlist url")
         response = self._validateResponse(
@@ -141,169 +184,35 @@ class AoDDownloader(object):
         self.currentPlaylist = [self._parseEpisode(
             episodeData) for episodeData in playlistData]
 
-# def download_episode(session: requests.Session, episodeList):
-#     refactor_chunklist_url = ''
-#     refactor_chunklist_response = ''
-
-#     def parse_m3u(m3uContent: str) -> str:
-#         # Only return highest Quality for now
-#         for line in m3uContent.split("\n"):
-#             if not line.startswith('#'):
-#                 return line.strip()
-#         return ""
-
-#     episodeListList = json.loads(episodeList).get('playlist')
-
-#     for episode in episodeListList:
-#         episodeUrl = episode['sources'][0]['file']
-#         episodeBaseUrl = episodeUrl[:(episodeUrl.find('index.m3u8'))] + "/"
-#         episodeTitle = (episode['title'] + episode['description']
-#                         ).replace(" - ", "_").replace(" ", "_").replace(",", "")
-
-#         episodeChunkListUrl = episodeBaseUrl + \
-#             parse_m3u(session.get(episodeUrl).text)
-
-#         refactor_chunklist_url = episodeChunkListUrl
-#         # get chunklist
-#         episodeChunkList = session.get(episodeChunkListUrl)
-#         print(episodeChunkList.text)
-#     episodeChunkList = episode_chunklist.text
-
-#     TODO: Redo download and transcode
-#     maybe use python-ffmpeg to reduce usage of os.system
-#     FFmpeg().option('f', 'concat').input(tmp/chunklist).output(episode_title + '.mkv', c='copy')
-
-#     return
-
-#     episode_counter = 0
-#     episode_list = episodeList
-
-#     while(episode_list.find("title") != -1):
-
-#         episode_counter = episode_counter + 1
-
-#         # get episode chunklist sources url
-#         episode_list = episode_list[(episode_list.find("file")+7):]
-#         episode_url = episode_list[:episode_list.find('"')]
-#         episode_url = episode_url.replace("\\u0026", "&")
-
-#         # get episode title
-#         episode_list = episode_list[(episode_list.find("title")+8):]
-#         episode_title = episode_list[:episode_list.find('"')]
-#         episode_title = episode_title.replace(" ", "_")
-
-#         if(episode_counter < episode_num_start):
-#             continue
-
-#         if(episode_counter > episode_num_end):
-#             break
-
-#         # get chunklist url
-#         episode_chunklist_url = session.get(episode_url)
-#         episode_chunklist_url = episode_chunklist_url.text
-
-#         # fetch quality options
-#         quality_options = re.findall("BANDWIDTH.*", episode_chunklist_url)
-
-#         # quality option setting
-#         quality_counter = 1
-
-#         # streamlock or cloudfround differentiation
-#         if("streamlock" in episode_url):
-#             while(quality_counter < quality_option):
-#                 episode_chunklist_url = episode_chunklist_url[(
-#                     episode_chunklist_url.find("RESOLUTION")+10):]
-#                 quality_counter = quality_counter + 1
-#             episode_chunklist_url = episode_chunklist_url[(episode_chunklist_url.find(
-#                 "chunklist")):(episode_chunklist_url.find('.m3u8')+5)]
-#             episode_chunklist_url = episode_url[:(
-#                 episode_url.find(".smil")+6)] + episode_chunklist_url
-#         else:
-#             while(quality_counter < quality_option):
-#                 episode_chunklist_url = episode_chunklist_url[(
-#                     episode_chunklist_url.find("RESOLUTION")+10):]
-#                 quality_counter = quality_counter + 1
-#             episode_chunklist_url = episode_chunklist_url[(episode_chunklist_url.find(
-#                 "CODECS=")+31):(episode_chunklist_url.find("Id=")+23)]
-#             episode_chunklist_url = episode_url[:(
-#                 episode_url.find('index.m3u8'))]+"/" + episode_chunklist_url
-
-#         # get chunklist
-#         episode_chunklist = session.get(episode_chunklist_url)
-#         episode_chunklist = episode_chunklist.text
-
-#         print(refactor_chunklist_url)
-#         print(episode_chunklist_url)
-
-#     print("\n\n\n")
-#     print(refactor_chunklist_response)
-#     print(episode_chunklist)
-
-#     # clean chunklist
-#     if("streamlock" in episode_url):
-#         chunks = re.findall("media.*", episode_chunklist)
-#         episode_chunklist = ""
-#         for line in chunks:
-#             episode_chunklist = episode_chunklist + \
-#                 (episode_url[:(episode_url.find(".smil")+6)] + line) + "\n"
-
-#     else:
-#         chunks = re.findall("..\/..\/..\/.*", episode_chunklist)
-#         episode_chunklist = ""
-#         for line in chunks:
-#             episode_chunklist = episode_chunklist + \
-#                 (episode_url[:(episode_url.find('index.m3u8'))
-#                              ] + line[8:]) + "\n"
-
-#     # check if episode is already downloaded
-#     if(os.path.exists(episode_title + ".mkv")):
-#         continue
-
-#     # download episode
-#     downloaded_chunks = 0
-#     download_percentage = 0
-
-#     # create tmp directory for chunks
-#     if(not os.path.exists("tmp")):
-#         os.mkdir("tmp")
-
-#     for url in episode_chunklist.splitlines():
-#         # download chunk
-#         with open("tmp/" + str(downloaded_chunks) + ".ts", "wb") as file:
-#             response = requests.get(url)
-#             file.write(response.content)
-
-#         downloaded_chunks = downloaded_chunks + 1
-#         download_percentage = (downloaded_chunks)/(len(chunks))*100
-#         download_percentage = format(download_percentage, ".2f")
-
-#         if os.name == "nt":
-#             os.system('cls')
-#         else:
-#             os.system('clear')
-
-#         print("downloading episode " + str(episode_counter))
-#         print(download_percentage)
-
-#     # create chunklist for ffmpeg
-#     with open("tmp/chunklist", "w") as file:
-#         for i in range(0, int(len(chunks))):
-#             file.write("file '" + str(i) + ".ts'" + "\n")
-
-#     # merge to video
-#     print("creating video")
-#     os.system('ffmpeg -f "concat" -i "tmp/chunklist" -c copy "' +
-#               episode_title + '.mkv"')
-
-#     # cleanup
-#     shutil.rmtree("tmp")
+    def download(self):
+        if not os.path.exists('downloads'):
+            os.mkdir('downloads')
+        for episode in self.playlist:
+            if episode.exists:
+                continue
+            with tempfile.TemporaryDirectory() as tmp:
+                episodeChunks = []
+                bar = ChargingBar(f"{episode.title}:", max= len(episode.chunkList))
+                for chunkName, chunkUrl in episode.chunkList:
+                    chunkFileName = f"{tmp}/{chunkName}"
+                    with open(chunkFileName, 'wb') as chunk:
+                        chunkResponse = self.session.get(chunkUrl)
+                        if chunkResponse.status_code != 200:
+                            raise AoDDownloaderException("Download failed")
+                        chunk.write(chunkResponse.content)
+                    ffmpegInput = ffmpeg.input(chunkFileName)
+                    episodeChunks.append(ffmpegInput.video)
+                    episodeChunks.append(ffmpegInput.audio)
+                    bar.next()
+                bar.finish()
+                print(f"Converting {episode.title}... ")
+                ffmpeg.concat(*episodeChunks, v=1, a=1).output(episode.file).run(capture_stderr=True)
+                print("Finished")
 
 
-# if os.name == "nt":
-#     os.system('cls')
-# else:
-#     os.system('clear')
-# read config file file
+
+
+
 config = configparser.ConfigParser()
 config.read_file(open(r'config.ini'))
 
@@ -327,8 +236,7 @@ password = (config.get("Credentials", "password")).encode('utf-8')
 # episode_num_end = int(config.get("Settings", "episode_end"))
 
 # get anime url
-# anime_url = input("Enter anime url: ")
-anime_url = "https://anime-on-demand.de/anime/226"
+anime_url = input("Enter anime url: ")
 
 # #download
 # session = login(username, password)
@@ -339,3 +247,4 @@ anime_url = "https://anime-on-demand.de/anime/226"
 
 a = AoDDownloader(username, password)
 a.setPlaylist(anime_url)
+a.download()
