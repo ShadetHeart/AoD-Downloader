@@ -1,15 +1,17 @@
 #!/usr/bin/env python3
 
-import requests
-import re
 import os
-import configparser
+import re
 import json
-from bs4 import BeautifulSoup
-import asyncio
 import ffmpeg
+import asyncio
+import requests
 import tempfile
+import configparser
+
+from bs4 import BeautifulSoup
 from progress.bar import ChargingBar
+
 
 class AoDDownloaderException(Exception):
     def __init__(self, message):
@@ -71,7 +73,7 @@ class AoDDownloader(object):
                     return m3uResult
                 else:
                     raise AoDDownloaderException(
-                        "Only 'soup' and 'json' are supported return objects")
+                        f"{returnObj} is not supported. Valid values are: soup, json, raw, m3u")
             else:
                 return
         reason = ''
@@ -192,7 +194,8 @@ class AoDDownloader(object):
                 continue
             with tempfile.TemporaryDirectory() as tmp:
                 episodeChunks = []
-                bar = ChargingBar(f"{episode.title}:", max= len(episode.chunkList))
+                bar = ChargingBar(f"{episode.title}:",
+                                  max=len(episode.chunkList))
                 for chunkName, chunkUrl in episode.chunkList:
                     chunkFileName = f"{tmp}/{chunkName}"
                     with open(chunkFileName, 'wb') as chunk:
@@ -206,11 +209,9 @@ class AoDDownloader(object):
                     bar.next()
                 bar.finish()
                 print(f"Converting {episode.title}... ")
-                ffmpeg.concat(*episodeChunks, v=1, a=1).output(episode.file).run(capture_stderr=True)
+                ffmpeg.concat(*episodeChunks, v=1,
+                              a=1).output(episode.file).run(capture_stderr=True)
                 print("Finished")
-
-
-
 
 
 config = configparser.ConfigParser()
