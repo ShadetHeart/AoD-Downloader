@@ -1,4 +1,4 @@
-#Anime on Demand Downloader 
+# Anime on Demand Downloader 
 
 **Currently refactoring in progress, the previous script can be found in old**
 
