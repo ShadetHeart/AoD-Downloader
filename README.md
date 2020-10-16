@@ -1,6 +1,6 @@
 # Anime on Demand Downloader 
 
-**Currently refactoring in progress, the previous script can be found in old**
+**Currently refactoring in progress, the previous script can be found in the folder named "old"**
 
 Python3 script that Downloads animes from the website "Anime on Demand".
 
