@@ -1,3 +1,7 @@
+#Anime on Demand Downloader 
+
+**Currently refactoring in progress, the previous script can be found in old**
+
 Python3 script that Downloads animes from the website "Anime on Demand".
 
 A subscribed account and a copy of ffmpeg (https://ffmpeg.org/)
