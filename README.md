@@ -2,19 +2,30 @@
 
 **Currently refactoring in progress, the previous script can be found in the folder named "old"**
 
-Python3 script that Downloads animes from the website "Anime on Demand".
+## Requirements
+- [Anime on Demand](https://anime-on-demand.de) account  
+  *Notice:* You can only donwload these episodes you are able to watch online
+- [ffmpeg](https://ffmpeg.org/)
+- [Python3.8](https://www.python.org/downloads/) or higher and if not installed with python [pip](https://pip.pypa.io/en/stable/installing/)
 
-A subscribed account and a copy of ffmpeg (https://ffmpeg.org/)
-are required for this to work.
+## Setup
+Run `pip install git+https://github.com/ShadetHeart/AoD-Downloader.git` to install AoDDownloader with pip.  
+If your system uses `pip3` for pip with python3 use this in the command above
 
-Setup:
-1. install python3
-2. use pip to install requests ("pip install requests" in commandline/powershell/terminal)
-3. (windows) download latest ffmpeg, put ffmpeg exectuable in the same folder as the script | (linux) install ffmpeg
-4. insert your login credentials and preferred settings into config.ini
-5. run, input URL of the anime.
+## Usage
+```
+Usage: AoDDownloader [OPTIONS] COMMAND [ARGS]...
 
-If not renamed/moved, already downloaded episodes will be skipped if the
-script is run again at a later point in time.
+  AoDDownloader is a tool to download streams from anime-on-demand.de
+
+Options:
+  --version  Show the version and exit.
+  --help     Show this message and exit.
+
+Commands:
+  download  Download an anime.
+  login     Login to anime-on-demand.de and save credentials
+  logout    Logout and remove all credentials
+```
 
 This project is licensed under the terms of the MIT license.
