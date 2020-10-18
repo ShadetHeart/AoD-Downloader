@@ -1,4 +1,8 @@
-requests
-beautifulsoup4
-ffmpeg-python
-progress
+Click == 7.1.2
+click-didyoumean
+requests >= 2.24.0
+beautifulsoup4 >= 4.9.3
+ffmpeg-python == 0.2.0
+progress >= 1.5
+keyring >= 21.4.0
+setuptools~=50.3.1
