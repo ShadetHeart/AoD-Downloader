@@ -1,9 +1,0 @@
-[Credentials]
-username = 
-password = 
-[Settings]
-quality = fullhd
-sub = yes
-episode_start = 1
-episode_end = 9999
-#possible quality settings: bluray, fullhd, hd, dvd, sd, mobil

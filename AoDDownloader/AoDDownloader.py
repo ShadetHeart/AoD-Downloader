@@ -41,7 +41,7 @@ class AoDDownloader(object):
 
         @property
         def file(self) -> str:
-            return f"downloads/{self.title}.mkv"
+            return f"{self.title}.mkv"
 
     def __init__(self, username: str, password: str, dub_only: bool = True):
         self.session = requests.Session()

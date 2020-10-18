@@ -19,6 +19,7 @@ def cli(ctx):
 def download(downloader):
     """
     Download an anime.
+    The files are downloaded in the current directory.
     """
     anime_url = click.prompt('Enter anime url to download')
     downloader.set_playlist(anime_url)
