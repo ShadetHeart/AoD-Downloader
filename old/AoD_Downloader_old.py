@@ -8,7 +8,7 @@ import configparser
 
 def login(username, password):
 	#create session cookies
-	url = "https://www.anime-on-demand.de/users/sign_in"
+	url = "https://anime-on-demand.de/users/sign_in"
 
 	session = requests.Session()
 
