@@ -10,7 +10,7 @@ import AoDDownloader as AoD
 
 
 def get_app_path(config: bool = False) -> str:
-    app_path = os.getenv('APPDATA') + "AoDDownloader" if os.name == 'nt' else str(Path.home().joinpath(".AoD"))
+    app_path = os.getenv('APPDATA') + "/AoDDownloader" if os.name == 'nt' else str(Path.home().joinpath(".AoD"))
     if not os.path.exists(app_path):
         os.mkdir(app_path)
     return app_path + "/config.json" if config else app_path
