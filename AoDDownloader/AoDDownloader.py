@@ -11,6 +11,8 @@ import requests
 from bs4 import BeautifulSoup
 from progress.bar import ChargingBar
 
+from .config import Config
+
 
 class AoDDownloaderException(Exception):
     def __init__(self, message):
@@ -43,11 +45,11 @@ class AoDDownloader(object):
         def file(self) -> str:
             return f"{self.title}.mkv"
 
-    def __init__(self, username: str, password: str, dub_only: bool = True):
+    def __init__(self, config: Config):
         self.session = requests.Session()
-        if username and password:
-            self._sign_in(username, password)
-        self.dubOnly = dub_only
+        self.config = config
+        if self.config.username and self.config.password:
+            self._sign_in(self.config.username, self.config.password)
 
     def _validate_response(self, response: requests.Response, return_obj: str = None):
         if response.status_code == 200:
@@ -98,11 +100,11 @@ class AoDDownloader(object):
                       "user[remember_me]": "0", "authenticity_token": self.token}))
         self.signed_in = True
 
-    def _parse_episode(self, episode_data: dict) -> Episode:
+    def _parse_episode(self, episode_data: dict, lang: str) -> Episode:
         episode_url = episode_data['sources'][0]['file']
         episode_base_url = episode_url.split('index.m3u8')[0] + '/'
 
-        episode_title = (episode_data['title'] + episode_data['description']
+        episode_title = ("_".join([episode_data['title'], episode_data['description'], lang])
                          ).replace(" - ", "_").replace(" ", "_").replace(",", "")
 
         # TODO: support streamlock!
@@ -171,26 +173,43 @@ class AoDDownloader(object):
     def token(self) -> str:
         return self.current_token
 
-    def set_playlist(self, anime_url):
+    def set_playlist(self, anime_url: str, german: bool = False, japanese: bool = False):
         if not self.signed_in:
             click.echo("No user logged in. Use login command.")
             exit(1)
         if re.match("https://(www\.)?anime-on-demand\.de/anime/\d+", anime_url) is None:
             raise AoDDownloaderException(
                 "Given url does not match a playlist url")
+        if not german and not japanese:
+            if not self.config.german and not self.config.japanese:
+                japanese = click.confirm("Try downloading japanese audio with subtitles?")
+                german = click.confirm("Try downloading german audio?")
+                if not german and not japanese:
+                    raise AoDDownloaderException("No language chosen. Please choose at least one.")
+                self.config.german = german
+                self.config.japanese = japanese
+                self.config.write()
+
         response = self._validate_response(
             self.session.get(anime_url), return_obj='soup')
-        stream = response.find('input', {'title': 'Deutschen Stream starten'}) if self.dubOnly else response.find(
-            'input', {'title': 'Japanischen Stream mit Untertiteln starten'})
-        if not stream or not stream['data-playlist']:
-            raise AoDDownloaderException("Could not determine {lang} stream for {url}".format(
-                lang="german" if self.dubOnly else "japanese", url=anime_url))
-        playlist_url = f"https://www.anime-on-demand.de{stream['data-playlist']}"
-        playlist_data = self._validate_response(
-            self.session.get(playlist_url), return_obj='json').get('playlist')
+        streams = {}
+        if german:
+            streams["german"] = response.find('input', {'title': 'Deutschen Stream starten'})
+        if japanese:
+            streams["japanese"] = response.find('input', {'title': 'Japanischen Stream mit Untertiteln starten'})
 
-        self.current_playlist = [self._parse_episode(
-            episodeData) for episodeData in playlist_data]
+        if (not streams.get("german") or not streams.get("german")['data-playlist']) and (
+                not streams.get("japanese") or not streams.get("japanese")['data-playlist']):
+            raise AoDDownloaderException(f"Could not determine stream for {anime_url}")
+
+        for stream in streams:
+            playlist_url = f"https://www.anime-on-demand.de{streams[stream]['data-playlist']}"
+            playlist_data = self._validate_response(
+                self.session.get(playlist_url), return_obj='json').get('playlist')
+            print(playlist_data)
+
+        # self.current_playlist = [self._parse_episode(
+        #     episodeData) for episodeData in playlist_data]
 
     def download(self):
         if not os.path.exists('downloads'):

@@ -15,14 +15,18 @@ def cli(ctx):
 
 
 @cli.command()
+@click.option('-j', '--japanese', 'japanese', is_flag=True,
+              help='Try downloading japanese audio with german subtitles.')
+@click.option('-g', '--german', 'german', is_flag=True,
+              help='Try downloading german audio.')
 @click.pass_obj
-def download(downloader):
+def download(downloader, german, japanese):
     """
     Download an anime.
     The files are downloaded in the current directory.
     """
     anime_url = click.prompt('Enter anime url to download')
-    downloader.set_playlist(anime_url)
+    downloader.set_playlist(anime_url, german=german, japanese=japanese)
     downloader.download()
 
 
@@ -35,7 +39,6 @@ def login():
 
 
 @cli.command()
-@click.pass_obj
 def logout():
     """
     Logout and remove all credentials
