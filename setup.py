@@ -17,11 +17,10 @@ setup(
     install_requires=[
         'Click == 7.1.2',
         'click-didyoumean',
-        'requests >= 2.24.0',
+        'requests >= 2.25.0',
         'beautifulsoup4 >= 4.9.3',
         'ffmpeg-python == 0.2.0',
-        'progress >= 1.5',
-        'keyring >= 21.4.0'
+        'keyring >= 21.5.0'
     ],
     entry_points='''
        [console_scripts]

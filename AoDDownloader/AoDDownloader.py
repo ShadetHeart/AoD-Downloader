@@ -9,7 +9,6 @@ import click
 import ffmpeg
 import requests
 from bs4 import BeautifulSoup
-from progress.bar import ChargingBar
 
 from .config import Config
 
@@ -49,7 +48,7 @@ class AoDDownloader(object):
         self.session = requests.Session()
         self.config = config
         if self.config.username and self.config.password:
-            self._sign_in(self.config.username, self.config.password)
+            self._sign_in()
 
     def _validate_response(self, response: requests.Response, return_obj: str = None):
         if response.status_code == 200:
@@ -62,7 +61,7 @@ class AoDDownloader(object):
                     self._set_header(response.url)
                     return soup_return
                 elif type(return_obj) == str and return_obj == "json":
-                    return json.loads(response.text)
+                    return response.json()
                 elif type(return_obj) == str and return_obj == "raw":
                     return response.text
                 elif type(return_obj) == str and return_obj == "m3u":
@@ -89,44 +88,23 @@ class AoDDownloader(object):
         raise AoDDownloaderException(
             f"Request returned {response.status_code}. {reason}")
 
-    def _sign_in(self, username: str, password: str):
+    def _sign_in(self):
         self._validate_response(
             self.session.get(self.sign_in_url), return_obj='soup')
         self._validate_response(
             self.session.post(
                 self.sign_in_url,
-                data={"utf8": "&#x2713;", "user[login]": username,
-                      "user[password]": password,
+                data={"utf8": "&#x2713;", "user[login]": self.config.username,
+                      "user[password]": self.config.password,
                       "user[remember_me]": "0", "authenticity_token": self.token}))
         self.signed_in = True
 
-    def _parse_episode(self, episode_data: dict, lang: str) -> Episode:
+    def _parse_episode(self, episode_data: dict) -> Episode:
         episode_url = episode_data['sources'][0]['file']
         episode_base_url = episode_url.split('index.m3u8')[0] + '/'
 
-        episode_title = ("_".join([episode_data['title'], episode_data['description'], lang])
+        episode_title = (" ".join([episode_data['title'], episode_data['description']])
                          ).replace(" - ", "_").replace(" ", "_").replace(",", "")
-
-        # TODO: support streamlock!
-        # streamlock or cloudfround differentiation
-        # if("streamlock" in episode_url):
-        #     while(quality_counter < quality_option):
-        #         episode_chunklist_url = episode_chunklist_url[(
-        #             episode_chunklist_url.find("RESOLUTION")+10):]
-        #         quality_counter = quality_counter + 1
-        #     episode_chunklist_url = episode_chunklist_url[(episode_chunklist_url.find(
-        #         "chunklist")):(episode_chunklist_url.find('.m3u8')+5)]
-        #     episode_chunklist_url = episode_url[:(
-        #         episode_url.find(".smil")+6)] + episode_chunklist_url
-        # else:
-        #     while(quality_counter < quality_option):
-        #         episode_chunklist_url = episode_chunklist_url[(
-        #             episode_chunklist_url.find("RESOLUTION")+10):]
-        #         quality_counter = quality_counter + 1
-        #     episode_chunklist_url = episode_chunklist_url[(episode_chunklist_url.find(
-        #         "CODECS=")+31):(episode_chunklist_url.find("Id=")+23)]
-        #     episode_chunklist_url = episode_url[:(
-        #         episode_url.find('index.m3u8'))]+"/" + episode_chunklist_url
 
         episode_chunk_list_url = episode_base_url + self._validate_response(
             self.session.get(episode_url), return_obj="m3u")[0]  # For now only use best quality
@@ -134,22 +112,6 @@ class AoDDownloader(object):
         raw_chunk_list = self._validate_response(
             self.session.get(episode_chunk_list_url), return_obj="m3u")
 
-        # TODO: support streamlock!
-        # clean chunklist
-        # if("streamlock" in episode_url):
-        #     chunks = re.findall("media.*", episode_chunklist)
-        #     episode_chunklist = ""
-        #     for line in chunks:
-        #         episode_chunklist = episode_chunklist + \
-        #             (episode_url[:(episode_url.find(".smil")+6)] + line) + "\n"
-        #
-        # else:
-        #     chunks = re.findall("..\/..\/..\/.*", episode_chunklist)
-        #     episode_chunklist = ""
-        #     for line in chunks:
-        #         episode_chunklist = episode_chunklist + \
-        #             (episode_url[:(episode_url.find('index.m3u8'))
-        #                         ] + line[8:]) + "\n"
         chunk_list = [(chunk.split('?')[0].split('/')[-1], chunk.replace("../../../", episode_base_url))
                       for chunk in raw_chunk_list]
         return self.Episode(episode_title, chunk_list)
@@ -189,6 +151,9 @@ class AoDDownloader(object):
                 self.config.german = german
                 self.config.japanese = japanese
                 self.config.write()
+            else:
+                german = self.config.german
+                japanese = self.config.japanese
 
         response = self._validate_response(
             self.session.get(anime_url), return_obj='soup')
@@ -202,37 +167,35 @@ class AoDDownloader(object):
                 not streams.get("japanese") or not streams.get("japanese")['data-playlist']):
             raise AoDDownloaderException(f"Could not determine stream for {anime_url}")
 
+        playlist_data = []
         for stream in streams:
             playlist_url = f"https://www.anime-on-demand.de{streams[stream]['data-playlist']}"
-            playlist_data = self._validate_response(
-                self.session.get(playlist_url), return_obj='json').get('playlist')
-            print(playlist_data)
+            for episode in self._validate_response(
+                    self.session.get(playlist_url), return_obj='json').get('playlist'):
+                if len(stream) > 1:
+                    episode['description'] += f"_{stream[:3].upper()}"
+                playlist_data.append(episode)
 
-        # self.current_playlist = [self._parse_episode(
-        #     episodeData) for episodeData in playlist_data]
+        self.current_playlist = [self._parse_episode(
+            episodeData) for episodeData in playlist_data]
 
     def download(self):
-        if not os.path.exists('downloads'):
-            os.mkdir('downloads')
         for episode in self.playlist:
             if episode.exists:
                 continue
             with tempfile.TemporaryDirectory() as tmp:
                 episode_chunks = []
-                bar = ChargingBar(f"{episode.title}:",
-                                  max=len(episode.chunkList))
-                for chunkName, chunkUrl in episode.chunkList:
-                    chunk_file_name = f"{tmp}/{chunkName}"
-                    with open(chunk_file_name, 'wb') as chunk:
-                        chunk_response = self.session.get(chunkUrl)
-                        if chunk_response.status_code != 200:
-                            raise AoDDownloaderException("Download failed")
-                        chunk.write(chunk_response.content)
-                    ffmpeg_input = ffmpeg.input(chunk_file_name)
-                    episode_chunks.append(ffmpeg_input.video)
-                    episode_chunks.append(ffmpeg_input.audio)
-                    bar.next()
-                bar.finish()
+                with click.progressbar(episode.chunkList, label=f"Downloading {episode.title}:") as chunkList:
+                    for chunkName, chunkUrl in chunkList:
+                        chunk_file_name = f"{tmp}/{chunkName}"
+                        with open(chunk_file_name, 'wb') as chunk:
+                            chunk_response = self.session.get(chunkUrl)
+                            if chunk_response.status_code != 200:
+                                raise AoDDownloaderException("Download failed")
+                            chunk.write(chunk_response.content)
+                        ffmpeg_input = ffmpeg.input(chunk_file_name)
+                        episode_chunks.append(ffmpeg_input.video)
+                        episode_chunks.append(ffmpeg_input.audio)
                 click.echo(f"Converting {episode.title}... ")
                 ffmpeg.concat(*episode_chunks, v=1,
                               a=1).output(episode.file).run(capture_stderr=True)
