@@ -10,18 +10,22 @@ def create_downloader() -> AoD.AoDDownloader:
     config = Config()
 
     if config.username:
-        try:
-            config.password = keyring.get_password(config.APPKEY, username=config.username)
-        except NoKeyringError:
-            click.echo(
-                "Keyring is not accessible.\n \"pip install dbus-python\" might fix this problem.")
+        if config.keyring:
+            try:
+                config.password = keyring.get_password(config.APPKEY, username=config.username)
+            except NoKeyringError:
+                click.echo(
+                    "Keyring is not accessible.\n \"pip install dbus-python\" might fix this problem.")
+        else:
+            config.password = click.prompt('Password', hide_input=True)
     return AoD.AoDDownloader(config=config)
 
 
-def create_login():
+def create_login(keyring: bool = True):
     config = Config()
     config.username = click.prompt('Username')
     config.password = click.prompt('Password', hide_input=True)
+    config.keyring = keyring
     try:
         aod = AoD.AoDDownloader(config=config)
     except AoD.AoDDownloaderException as e:
@@ -31,17 +35,20 @@ def create_login():
         click.echo("Login fehlgeschlagen.")
         return
 
-    try:
-        keyring.set_password(config.APPKEY, username=config.username, password=config.password)
-    except NoKeyringError:
-        click.echo(
-            "Keyring is not accessible.\n \"pip install dbus-python\" might fix this problem.")
+    if keyring:
+        try:
+            keyring.set_password(config.APPKEY, username=config.username, password=config.password)
+        except NoKeyringError:
+            click.echo(
+                f"""{click.style('Keyring is not accessible.', fg='red')}
+"pip install dbus-python" might fix this problem.
+Or use --no-keyring to enter password every time and disable keyring""")
     config.write()
 
 
 def remove_login():
     config = Config()
-    if config.username:
+    if config.username and config.keyring:
         try:
             keyring.delete_password(config.APPKEY, username=config.username)
         except NoKeyringError:

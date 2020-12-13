@@ -21,6 +21,7 @@ class Config(object):
         self.german = json_config.get("german") or False
         self.japanese = json_config.get("japanese") or False
         self.quality = Quality[json_config.get("quality")] if json_config.get("quality") else None
+        self.keyring = json_config.get("keyring") if json_config.get("keyring") is not None else True
         self.password = None
 
     def write(self):
@@ -29,7 +30,8 @@ class Config(object):
                 "username": self.username,
                 "german": self.german,
                 "japanese": self.japanese,
-                "quality": self.quality.name if self.quality else ""
+                "quality": self.quality.name if self.quality else "",
+                "keyring": self.keyring
             }
             json.dump(config_dict, config_file)
 

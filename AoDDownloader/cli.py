@@ -49,11 +49,13 @@ def download(downloader, german, japanese, quality, verbose):
 
 
 @cli.command()
-def login():
+@click.option('--no-keyring', 'no_keyring', is_flag=True,
+              help='Deactivate keyring option for systems who have no accessible keyring')
+def login(no_keyring):
     """
     Login to anime-on-demand.de and save credentials
     """
-    create_login()
+    create_login(keyring=not no_keyring)
 
 
 @cli.command()
