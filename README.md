@@ -23,6 +23,7 @@ Options:
   --help     Show this message and exit.
 
 Commands:
+  config    Configuration of AoDDownloader
   download  Download an anime.
   login     Login to anime-on-demand.de and save credentials
   logout    Logout and remove all credentials
