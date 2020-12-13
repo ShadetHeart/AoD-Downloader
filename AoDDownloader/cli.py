@@ -7,12 +7,10 @@ from .quality import Quality
 
 @click.group(cls=DYMGroup)
 @click.version_option(version=_AoDDownloader.__version__, prog_name='AoDDownloader')
-@click.pass_context
-def cli(ctx):
+def cli():
     """
     AoDDownloader is a tool to download streams from anime-on-demand.de
     """
-    ctx.obj = create_downloader()
 
 
 @cli.command()
@@ -25,12 +23,12 @@ def cli(ctx):
               help='Try downloading japanese audio with german subtitles.')
 @click.option('-g', '--german', 'german', is_flag=True,
               help='Try downloading german audio.')
-@click.pass_obj
-def download(downloader, german, japanese, quality, verbose):
+def download(german, japanese, quality, verbose):
     """
     Download an anime.
     The files are downloaded in the current directory.
     """
+    downloader = create_downloader()
     anime_url = click.prompt('Enter anime url to download')
     if quality:
         if verbose:
@@ -55,7 +53,7 @@ def login(no_keyring):
     """
     Login to anime-on-demand.de and save credentials
     """
-    create_login(keyring=not no_keyring)
+    create_login(use_keyring=not no_keyring)
 
 
 @cli.command()
@@ -74,29 +72,27 @@ def config():
 
 
 @config.command()
-@click.pass_obj
-def list(downloader):
+def list():
     """
     List current config settings
     """
+    downloader = create_downloader()
     click.echo(f"""Download german if available:\t{downloader.config.german or False}
 Download japanese if available:\t{downloader.config.japanese or False}
 Highest download quality:\t{downloader.config.quality.name if downloader.config.quality else "-"}""")
 
 
 @config.command()
-@click.pass_obj
-def quality(downloader):
+def quality():
     """
     Change currently selected default download quality
     """
-    downloader.config.setQuality()
+    create_downloader().config.setQuality()
 
 
 @config.command()
-@click.pass_obj
 def languages(downloader):
     """
     Change currently selected languages to be downloaded
     """
-    downloader.config.setLanguages()
+    create_downloader().config.setLanguages()

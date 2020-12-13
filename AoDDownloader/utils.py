@@ -21,11 +21,11 @@ def create_downloader() -> AoD.AoDDownloader:
     return AoD.AoDDownloader(config=config)
 
 
-def create_login(keyring: bool = True):
+def create_login(use_keyring: bool = True):
     config = Config()
     config.username = click.prompt('Username')
     config.password = click.prompt('Password', hide_input=True)
-    config.keyring = keyring
+    config.keyring = use_keyring
     try:
         aod = AoD.AoDDownloader(config=config)
     except AoD.AoDDownloaderException as e:
@@ -35,7 +35,7 @@ def create_login(keyring: bool = True):
         click.echo("Login fehlgeschlagen.")
         return
 
-    if keyring:
+    if use_keyring:
         try:
             keyring.set_password(config.APPKEY, username=config.username, password=config.password)
         except NoKeyringError:
