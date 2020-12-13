@@ -2,6 +2,7 @@ import json
 import os
 from pathlib import Path
 
+from .quality import Quality
 
 class Config(object):
     APPKEY = "AoDDownloader"
@@ -16,6 +17,7 @@ class Config(object):
         self.username = json_config.get("username")
         self.german = json_config.get("german") or False
         self.japanese = json_config.get("japanese") or False
+        self.quality = Quality[json_config.get("quality")] if json_config.get("quality") else None
         self.password = None
 
     def write(self):
@@ -23,7 +25,8 @@ class Config(object):
             config_dict = {
                 "username": self.username,
                 "german": self.german,
-                "japanese": self.japanese
+                "japanese": self.japanese,
+                "quality": self.quality.name
             }
             json.dump(config_dict, config_file)
 

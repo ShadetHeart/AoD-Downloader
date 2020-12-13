@@ -11,6 +11,7 @@ import requests
 from bs4 import BeautifulSoup
 
 from .config import Config
+from .quality import Quality
 
 
 class AoDDownloaderException(Exception):
@@ -24,6 +25,7 @@ class AoDDownloader(object):
     current_playlist: list = None
     current_token: str = None
     signed_in: bool = False
+    prompted_quality: bool = False
 
     class Episode(object):
         def __init__(self, title: str, chunk_list: list):
@@ -106,9 +108,21 @@ class AoDDownloader(object):
         episode_title = (" ".join([episode_data['title'], episode_data['description']])
                          ).replace(" - ", "_").replace(" ", "_").replace(",", "")
 
-        episode_chunk_list_url = episode_base_url + self._validate_response(
-            self.session.get(episode_url), return_obj="m3u")[0]  # For now only use best quality
+        episode_chunk_list_url_array = [episode_base_url + url_path for url_path in self._validate_response(
+            self.session.get(episode_url), return_obj="m3u")]
 
+        if not self.config.quality:
+            self.config.quality = Quality[click.prompt("Select the max wanted quality.", type=click.Choice([e.name for e in Quality]), show_choices=True)]
+            self.config.write()
+
+        selected_quality = self.config.quality.value
+        if abs(selected_quality) > len(episode_chunk_list_url_array):
+            selected_quality = -1 * len(episode_chunk_list_url_array)
+            if not self.prompted_quality:
+                click.echo(f"Max quality is not available. {Quality(selected_quality).name.upper()} will be used.")
+                self.prompted_quality = True
+
+        episode_chunk_list_url = episode_chunk_list_url_array[selected_quality]
         raw_chunk_list = self._validate_response(
             self.session.get(episode_chunk_list_url), return_obj="m3u")
 

@@ -3,7 +3,6 @@ import keyring
 from keyring.errors import NoKeyringError
 
 import AoDDownloader as AoD
-
 from .config import Config
 
 
@@ -15,7 +14,7 @@ def create_downloader() -> AoD.AoDDownloader:
             config.password = keyring.get_password(config.APPKEY, username=config.username)
         except NoKeyringError:
             click.echo(
-                "Es konnte nicht auf den Keyring zugegriffen werden.\n Das Problem könnte mittels \"pip install dbus-python\" behoben werden.")
+                "Keyring is not accessible.\n \"pip install dbus-python\" might fix this problem.")
     return AoD.AoDDownloader(config=config)
 
 
@@ -36,7 +35,7 @@ def create_login():
         keyring.set_password(config.APPKEY, username=config.username, password=config.password)
     except NoKeyringError:
         click.echo(
-            "Es konnte nicht auf den Keyring zugegriffen werden.\n Das Problem könnte mittels \"pip install dbus-python\" behoben werden.")
+            "Keyring is not accessible.\n \"pip install dbus-python\" might fix this problem.")
     config.write()
 
 
@@ -47,6 +46,6 @@ def remove_login():
             keyring.delete_password(config.APPKEY, username=config.username)
         except NoKeyringError:
             click.echo(
-                "Es konnte nicht auf den Keyring zugegriffen werden.\n Das Problem könnte mittels \"pip install dbus-python\" behoben werden.")
+                "Keyring is not accessible.\n \"pip install dbus-python\" might fix this problem.")
     config.username = None
     config.write()

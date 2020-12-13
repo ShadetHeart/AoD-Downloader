@@ -14,14 +14,8 @@ setup(
     license='MIT',
     packages=['AoDDownloader'],
     include_package_data=True,
-    install_requires=[
-        'Click == 7.1.2',
-        'click-didyoumean',
-        'requests >= 2.25.0',
-        'beautifulsoup4 >= 4.9.3',
-        'ffmpeg-python == 0.2.0',
-        'keyring >= 21.5.0'
-    ],
+    python_requires=">=3.8",
+    install_requires=open("requirements.txt").read().split("\n"),
     entry_points='''
        [console_scripts]
        AoDDownloader=AoDDownloader.__main__:cli
