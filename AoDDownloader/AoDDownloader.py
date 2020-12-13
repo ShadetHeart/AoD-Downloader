@@ -216,6 +216,9 @@ class AoDDownloader(object):
                         episode_chunks.append(ffmpeg_input.video)
                         episode_chunks.append(ffmpeg_input.audio)
                 click.echo(f"Converting {episode.title}... ")
-                ffmpeg.concat(*episode_chunks, v=1,
-                              a=1).output(episode.file).run(capture_stderr=not verbose)
+                try:
+                    ffmpeg.concat(*episode_chunks, v=1,
+                                  a=1).output(episode.file).run(capture_stderr=not verbose)
+                except FileNotFoundError:
+                    raise AoDDownloaderException("ffmpeg is not installed. Please install ffmpeg")
                 click.echo(click.style(f"Finished {episode.title}", fg='green'))

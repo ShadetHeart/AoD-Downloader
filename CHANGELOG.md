@@ -3,6 +3,7 @@
 # 1.0.0rc1
 - add verbose output option
 - add `--no-keyring` option to login for system that have no keyring installed
+- catch if no ffmpeg is installed
 
 # 1.0.0rc0
 - add more output
