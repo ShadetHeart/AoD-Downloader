@@ -148,15 +148,19 @@ class AoDDownloader(object):
     def token(self) -> str:
         return self.current_token
 
-    def set_playlist(self, anime_url: str):
+    def set_playlist(self, anime_url: str, verbose: bool):
         if not self.signed_in:
             click.echo("No user logged in. Use login command.")
             exit(1)
         if re.match("https://(www\.)?anime-on-demand\.de/anime/\d+", anime_url) is None:
             raise AoDDownloaderException(
                 "Given url does not match a playlist url")
+        if verbose:
+            click.echo("Matched playlist url")
 
         if not self.config.german and not self.config.japanese:
+            if verbose:
+                click.echo("No language selection found")
             japanese, german = self.config.setLanguages()
             if not german and not japanese:
                 raise AoDDownloaderException("No language chosen. Please choose at least one.")
@@ -168,8 +172,12 @@ class AoDDownloader(object):
             self.session.get(anime_url), return_obj='soup')
         streams = {}
         if german:
+            if verbose:
+                click.echo("Set german stream")
             streams["german"] = response.find('input', {'title': 'Deutschen Stream starten'})
         if japanese:
+            if verbose:
+                click.echo("Set japanese stream")
             streams["japanese"] = response.find('input', {'title': 'Japanischen Stream mit Untertiteln starten'})
 
         if (not streams.get("german") or not streams.get("german")['data-playlist']) and (
@@ -189,7 +197,7 @@ class AoDDownloader(object):
         self.current_playlist = [self._parse_episode(
             episodeData) for episodeData in playlist_data]
 
-    def download(self):
+    def download(self, verbose: bool):
         for episode in self.playlist:
             if episode.exists:
                 click.echo(f"{click.style(f'Skipping {episode.title}.', fg='green')} Already exists.")
@@ -209,5 +217,5 @@ class AoDDownloader(object):
                         episode_chunks.append(ffmpeg_input.audio)
                 click.echo(f"Converting {episode.title}... ")
                 ffmpeg.concat(*episode_chunks, v=1,
-                              a=1).output(episode.file).run(capture_stderr=True)
+                              a=1).output(episode.file).run(capture_stderr=not verbose)
                 click.echo(click.style(f"Finished {episode.title}", fg='green'))

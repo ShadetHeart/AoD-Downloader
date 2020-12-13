@@ -16,6 +16,8 @@ def cli(ctx):
 
 
 @cli.command()
+@click.option('-v', '--verbose', 'verbose', is_flag=True,
+              help='Verbose output')
 @click.option('-q', '--quality', 'quality', type=click.Choice([e.name for e in Quality]),
               help='Try downloading with this quality, else highest available',
               show_choices=True)
@@ -24,20 +26,24 @@ def cli(ctx):
 @click.option('-g', '--german', 'german', is_flag=True,
               help='Try downloading german audio.')
 @click.pass_obj
-def download(downloader, german, japanese, quality):
+def download(downloader, german, japanese, quality, verbose):
     """
     Download an anime.
     The files are downloaded in the current directory.
     """
     anime_url = click.prompt('Enter anime url to download')
     if quality:
+        if verbose:
+            click.echo(f"Override quality settings")
         downloader.config.quality = Quality[quality]
     if german or japanese:
+        if verbose:
+            click.echo(f"Override language settings")
         downloader.config.japanese = japanese
         downloader.config.german = german
     try:
-        downloader.set_playlist(anime_url)
-        downloader.download()
+        downloader.set_playlist(anime_url, verbose)
+        downloader.download(verbose)
     except _AoDDownloader.AoDDownloaderException as e:
         click.echo(f"{click.style('Error:', fg='red')} {e}")
 

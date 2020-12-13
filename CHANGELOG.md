@@ -1,5 +1,8 @@
 # Changelog
 
+# 1.0.0rc1
+- add verbose output option
+
 # 1.0.0rc0
 - add more output
 - better error formatting
