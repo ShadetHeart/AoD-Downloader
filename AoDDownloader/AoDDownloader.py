@@ -112,8 +112,7 @@ class AoDDownloader(object):
             self.session.get(episode_url), return_obj="m3u")]
 
         if not self.config.quality:
-            self.config.quality = Quality[click.prompt("Select the max wanted quality.", type=click.Choice([e.name for e in Quality]), show_choices=True)]
-            self.config.write()
+            self.config.setQuality()
 
         selected_quality = self.config.quality.value
         if abs(selected_quality) > len(episode_chunk_list_url_array):
@@ -149,25 +148,21 @@ class AoDDownloader(object):
     def token(self) -> str:
         return self.current_token
 
-    def set_playlist(self, anime_url: str, german: bool = False, japanese: bool = False):
+    def set_playlist(self, anime_url: str):
         if not self.signed_in:
             click.echo("No user logged in. Use login command.")
             exit(1)
         if re.match("https://(www\.)?anime-on-demand\.de/anime/\d+", anime_url) is None:
             raise AoDDownloaderException(
                 "Given url does not match a playlist url")
-        if not german and not japanese:
-            if not self.config.german and not self.config.japanese:
-                japanese = click.confirm("Try downloading japanese audio with subtitles?")
-                german = click.confirm("Try downloading german audio?")
-                if not german and not japanese:
-                    raise AoDDownloaderException("No language chosen. Please choose at least one.")
-                self.config.german = german
-                self.config.japanese = japanese
-                self.config.write()
-            else:
-                german = self.config.german
-                japanese = self.config.japanese
+
+        if not self.config.german and not self.config.japanese:
+            japanese, german = self.config.setLanguages()
+            if not german and not japanese:
+                raise AoDDownloaderException("No language chosen. Please choose at least one.")
+        else:
+            german = self.config.german
+            japanese = self.config.japanese
 
         response = self._validate_response(
             self.session.get(anime_url), return_obj='soup')
