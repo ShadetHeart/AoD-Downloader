@@ -174,7 +174,8 @@ class AoDDownloader(object):
 
         if (not streams.get("german") or not streams.get("german")['data-playlist']) and (
                 not streams.get("japanese") or not streams.get("japanese")['data-playlist']):
-            raise AoDDownloaderException(f"Could not determine stream for {anime_url}")
+            raise AoDDownloaderException(
+                f"Could not determine stream for {anime_url}. Selected language may not be available")
 
         playlist_data = []
         for stream in streams:
@@ -191,6 +192,7 @@ class AoDDownloader(object):
     def download(self):
         for episode in self.playlist:
             if episode.exists:
+                click.echo(f"{click.style(f'Skipping {episode.title}.', fg='green')} Already exists.")
                 continue
             with tempfile.TemporaryDirectory() as tmp:
                 episode_chunks = []
@@ -208,4 +210,4 @@ class AoDDownloader(object):
                 click.echo(f"Converting {episode.title}... ")
                 ffmpeg.concat(*episode_chunks, v=1,
                               a=1).output(episode.file).run(capture_stderr=True)
-                click.echo("Finished")
+                click.echo(click.style(f"Finished {episode.title}", fg='green'))

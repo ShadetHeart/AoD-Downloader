@@ -1,5 +1,9 @@
 # Changelog
 
+# 1.0.0rc0
+- add more output
+- better error formatting
+
 # 0.6.0
 - add quality selection
 - save quality to config

@@ -39,7 +39,7 @@ def download(downloader, german, japanese, quality):
         downloader.set_playlist(anime_url)
         downloader.download()
     except _AoDDownloader.AoDDownloaderException as e:
-        click.echo(f"{click.style(f'Error:', fg='red', bold=True)} e")
+        click.echo(f"{click.style('Error:', fg='red')} {e}")
 
 
 @cli.command()
