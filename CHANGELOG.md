@@ -1,5 +1,8 @@
 # Changelog
 
+# 1.0.0rc2
+- use csrf-token from meta fields not input since input is not always available
+
 # 1.0.0rc1
 - add verbose output option
 - add `--no-keyring` option to login for system that have no keyring installed

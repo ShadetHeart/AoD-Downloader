@@ -59,7 +59,7 @@ class AoDDownloader(object):
                     soup_return = BeautifulSoup(
                         response.text, features="html.parser")
                     self.current_token = soup_return.find(
-                        'input', {'name': 'authenticity_token'})['value']
+                        'meta', {'name': 'csrf-token'})['content']
                     self._set_header(response.url)
                     return soup_return
                 elif type(return_obj) == str and return_obj == "json":
