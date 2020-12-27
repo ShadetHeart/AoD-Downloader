@@ -210,7 +210,10 @@ class AoDDownloader(object):
                         with open(chunk_file_name, 'wb') as chunk:
                             chunk_response = self.session.get(chunkUrl)
                             if chunk_response.status_code != 200:
-                                raise AoDDownloaderException("Download failed")
+                                # Retry download of chunk once.
+                                chunk_response = self.session.get(chunkUrl)
+                                if chunk_response.status_code != 200:
+                                    raise AoDDownloaderException(f"Download failed with status code {chunk_response.status_code}")
                             chunk.write(chunk_response.content)
                         ffmpeg_input = ffmpeg.input(chunk_file_name)
                         episode_chunks.append(ffmpeg_input.video)

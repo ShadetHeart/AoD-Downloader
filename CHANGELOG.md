@@ -1,5 +1,8 @@
 # Changelog
 
+# 1.0.0.rc3
+- add single retry for chunk download
+
 # 1.0.0rc2
 - use csrf-token from meta fields not input since input is not always available
 
