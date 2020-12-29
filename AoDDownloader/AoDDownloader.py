@@ -103,8 +103,10 @@ class AoDDownloader(object):
 
     def _parse_episode(self, episode_data: dict) -> Episode:
         episode_url = episode_data['sources'][0]['file']
-        episode_base_url = episode_url.split('index.m3u8')[0] + '/'
+        streamlock = "streamlock" in episode_url
 
+        episode_base_url = (episode_url.split('index.m3u8')[0] + '/') if not streamlock else \
+            episode_url.split('playlist.m3u8')[0]
         episode_title = (" ".join([episode_data['title'], episode_data['description']])
                          ).replace(" - ", "_").replace(" ", "_").replace(",", "")
 
@@ -121,12 +123,13 @@ class AoDDownloader(object):
                 click.echo(f"Max quality is not available. {Quality(selected_quality).name.upper()} will be used.")
                 self.prompted_quality = True
 
-        episode_chunk_list_url = episode_chunk_list_url_array[selected_quality]
-        raw_chunk_list = self._validate_response(
-            self.session.get(episode_chunk_list_url), return_obj="m3u")
+        raw_chunk_list = self._validate_response(self.session.get(episode_chunk_list_url_array[selected_quality]),
+                                                 return_obj="m3u")
 
         chunk_list = [(chunk.split('?')[0].split('/')[-1], chunk.replace("../../../", episode_base_url))
-                      for chunk in raw_chunk_list]
+                      for chunk in raw_chunk_list] if not streamlock else [
+            (chunk.split('=')[-1], episode_base_url + chunk) for chunk in raw_chunk_list]
+
         return self.Episode(episode_title, chunk_list)
 
     def _set_header(self, url: str):
@@ -213,7 +216,8 @@ class AoDDownloader(object):
                                 # Retry download of chunk once.
                                 chunk_response = self.session.get(chunkUrl)
                                 if chunk_response.status_code != 200:
-                                    raise AoDDownloaderException(f"Download failed with status code {chunk_response.status_code}")
+                                    raise AoDDownloaderException(
+                                        f"Download failed with status code {chunk_response.status_code}")
                             chunk.write(chunk_response.content)
                         ffmpeg_input = ffmpeg.input(chunk_file_name)
                         episode_chunks.append(ffmpeg_input.video)
