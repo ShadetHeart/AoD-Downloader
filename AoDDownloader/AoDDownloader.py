@@ -205,7 +205,7 @@ class AoDDownloader(object):
             if episode.exists:
                 click.echo(f"{click.style(f'Skipping {episode.title}.', fg='green')} Already exists.")
                 continue
-            with tempfile.NamedTemporaryFile() as tmp:
+            with tempfile.NamedTemporaryFile() if os.name != 'nt' else open(episode.file + ".ts", "w+b") as tmp:
                 with click.progressbar(episode.chunkList, label=f"Downloading {episode.title}:") as chunkList:
                     for chunkUrl in chunkList:
                         chunk_response = self.session.get(chunkUrl)
@@ -222,3 +222,6 @@ class AoDDownloader(object):
                 except FileNotFoundError:
                     raise AoDDownloaderException("ffmpeg is not installed. Please install ffmpeg")
                 click.echo(click.style(f"Finished {episode.title}", fg='green'))
+            if os.name == 'nt':
+                os.remove(episode.file + '.ts')
+        click.echo(click.style("\n\nDownload finished", fg='green'))
