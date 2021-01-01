@@ -3,6 +3,7 @@
 # 1.0.0rc4
 - fix 403 Error with no explanation (was streamlock related)
 - readd support for streamlock
+- concatenate all chunks of an episode in one lange `.ts` file
 
 # 1.0.0rc3
 - add single retry for chunk download

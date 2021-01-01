@@ -126,9 +126,9 @@ class AoDDownloader(object):
         raw_chunk_list = self._validate_response(self.session.get(episode_chunk_list_url_array[selected_quality]),
                                                  return_obj="m3u")
 
-        chunk_list = [(chunk.split('?')[0].split('/')[-1], chunk.replace("../../../", episode_base_url))
+        chunk_list = [chunk.replace("../../../", episode_base_url)
                       for chunk in raw_chunk_list] if not streamlock else [
-            (chunk.split('=')[-1], episode_base_url + chunk) for chunk in raw_chunk_list]
+            episode_base_url + chunk for chunk in raw_chunk_list]
 
         return self.Episode(episode_title, chunk_list)
 
@@ -205,27 +205,20 @@ class AoDDownloader(object):
             if episode.exists:
                 click.echo(f"{click.style(f'Skipping {episode.title}.', fg='green')} Already exists.")
                 continue
-            with tempfile.TemporaryDirectory() as tmp:
-                episode_chunks = []
+            with tempfile.NamedTemporaryFile() as tmp:
                 with click.progressbar(episode.chunkList, label=f"Downloading {episode.title}:") as chunkList:
-                    for chunkName, chunkUrl in chunkList:
-                        chunk_file_name = f"{tmp}/{chunkName}"
-                        with open(chunk_file_name, 'wb') as chunk:
+                    for chunkUrl in chunkList:
+                        chunk_response = self.session.get(chunkUrl)
+                        if chunk_response.status_code != 200:
+                            # Retry download of chunk once.
                             chunk_response = self.session.get(chunkUrl)
                             if chunk_response.status_code != 200:
-                                # Retry download of chunk once.
-                                chunk_response = self.session.get(chunkUrl)
-                                if chunk_response.status_code != 200:
-                                    raise AoDDownloaderException(
-                                        f"Download failed with status code {chunk_response.status_code}")
-                            chunk.write(chunk_response.content)
-                        ffmpeg_input = ffmpeg.input(chunk_file_name)
-                        episode_chunks.append(ffmpeg_input.video)
-                        episode_chunks.append(ffmpeg_input.audio)
+                                raise AoDDownloaderException(
+                                    f"Download failed with status code {chunk_response.status_code}")
+                        tmp.write(chunk_response.content)
                 click.echo(f"Converting {episode.title}... ")
                 try:
-                    ffmpeg.concat(*episode_chunks, v=1,
-                                  a=1).output(episode.file).run(capture_stderr=not verbose)
+                    ffmpeg.input(tmp.name).output(episode.file).run(capture_stderr=not verbose)
                 except FileNotFoundError:
                     raise AoDDownloaderException("ffmpeg is not installed. Please install ffmpeg")
                 click.echo(click.style(f"Finished {episode.title}", fg='green'))
