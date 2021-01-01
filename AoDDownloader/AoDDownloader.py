@@ -155,7 +155,9 @@ class AoDDownloader(object):
         if not self.signed_in:
             click.echo("No user logged in. Use login command.")
             exit(1)
-        if re.match("https://(www\.)?anime-on-demand\.de/anime/\d+", anime_url) is None:
+        if anime_url.isdecimal():
+            anime_url = "https://www.anime-on-demand.de/anime/" + anime_url
+        elif re.match("https://(www\.)?anime-on-demand\.de/anime/\d+", anime_url) is None:
             raise AoDDownloaderException(
                 "Given url does not match a playlist url")
         if verbose:

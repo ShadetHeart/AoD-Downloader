@@ -140,3 +140,5 @@ dmypy.json
 # profiling data
 .prof
 
+# VSCode
+.vscode
