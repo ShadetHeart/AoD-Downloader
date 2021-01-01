@@ -29,7 +29,7 @@ def download(german, japanese, quality, verbose):
     The files are downloaded in the current directory.
     """
     downloader = create_downloader()
-    anime_url = click.prompt('Enter anime url to download')
+    anime_url = click.prompt('Enter anime url or id to download')
     if quality:
         if verbose:
             click.echo(f"Override quality settings")
