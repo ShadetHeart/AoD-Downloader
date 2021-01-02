@@ -220,10 +220,18 @@ class AoDDownloader(object):
                         tmp.write(chunk_response.content)
                 click.echo(f"Converting {episode.title}... ")
                 try:
-                    ffmpeg.input(tmp.name).output(episode.file).run(capture_stderr=not verbose)
+                    input_name = self.escape_string_for_ffmpeg(tmp.name)
+                    output_name = self.escape_string_for_ffmpeg(episode.file)
+                    ffmpeg.input(input_name).output(output_name).run(capture_stderr=not verbose)
                 except FileNotFoundError:
                     raise AoDDownloaderException("ffmpeg is not installed. Please install ffmpeg")
                 click.echo(click.style(f"Finished {episode.title}", fg='green'))
             if os.name == 'nt':
                 os.remove(episode.file + '.ts')
         click.echo(click.style("\n\nDownload finished", fg='green'))
+
+
+    def escape_string_for_ffmpeg(self, string: str):
+        string = string.replace(":", "\\:")
+        string = string.replace("'", "\\'")
+        return string
