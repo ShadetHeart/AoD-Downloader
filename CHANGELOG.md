@@ -1,5 +1,9 @@
 # Changelog
 
+# 1.0.0rc6
+- added integer only support
+- added escape of ffmpeg strings
+
 # 1.0.0rc5
 - Use no temp file on windows because of permission errors
 
