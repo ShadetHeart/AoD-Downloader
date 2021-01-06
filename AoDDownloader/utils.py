@@ -21,10 +21,14 @@ def create_downloader() -> AoD.AoDDownloader:
     return AoD.AoDDownloader(config=config)
 
 
-def create_login(use_keyring: bool = True):
+def create_login(use_keyring: bool = True, username: str = '', password: str = ''):
     config = Config()
-    config.username = click.prompt('Username')
-    config.password = click.prompt('Password', hide_input=True)
+    if(not username or not password):
+        config.username = click.prompt('Username')
+        config.password = click.prompt('Password', hide_input=True)
+    else:
+        config.username = username
+        config.password = password
     config.keyring = use_keyring
     try:
         aod = AoD.AoDDownloader(config=config)
@@ -38,6 +42,7 @@ def create_login(use_keyring: bool = True):
     if use_keyring:
         try:
             keyring.set_password(config.APPKEY, username=config.username, password=config.password)
+            click.echo("Login erfolgreich.")
         except NoKeyringError:
             click.echo(
                 f"""{click.style('Keyring is not accessible.', fg='red')}
