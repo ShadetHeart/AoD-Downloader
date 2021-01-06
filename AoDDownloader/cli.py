@@ -24,12 +24,16 @@ def cli():
 @click.option('-g', '--german', 'german', is_flag=True,
               help='Try downloading german audio.')
 @click.argument('url', default='')
-def download(german, japanese, quality, verbose, url):
+@click.argument('password', default='')
+def download(german, japanese, quality, verbose, url, password):
     """
     Download an anime.
     The files are downloaded in the current directory.
     """
-    downloader = create_downloader()
+    if password:
+        downloader = create_downloader(password)
+    else:
+        downloader = create_downloader()
     if url:
         anime_url= url
     else:

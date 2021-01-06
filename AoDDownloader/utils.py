@@ -6,7 +6,7 @@ import AoDDownloader as AoD
 from .config import Config
 
 
-def create_downloader() -> AoD.AoDDownloader:
+def create_downloader(password) -> AoD.AoDDownloader:
     config = Config()
 
     if config.username:
@@ -17,7 +17,10 @@ def create_downloader() -> AoD.AoDDownloader:
                 click.echo(
                     "Keyring is not accessible.\n \"pip install dbus-python\" might fix this problem.")
         else:
-            config.password = click.prompt('Password', hide_input=True)
+            if password:
+                config.password = password
+            else:
+                config.password = click.prompt('Password', hide_input=True)
     return AoD.AoDDownloader(config=config)
 
 
