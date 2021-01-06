@@ -42,13 +42,13 @@ def create_login(use_keyring: bool = True, username: str = '', password: str = '
     if use_keyring:
         try:
             keyring.set_password(config.APPKEY, username=config.username, password=config.password)
-            click.echo("Login erfolgreich.")
         except NoKeyringError:
             click.echo(
                 f"""{click.style('Keyring is not accessible.', fg='red')}
 "pip install dbus-python" might fix this problem.
 Or use --no-keyring to enter password every time and disable keyring""")
     config.write()
+    click.echo("Login erfolgreich.")
 
 
 def remove_login():
