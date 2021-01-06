@@ -198,9 +198,9 @@ class AoDDownloader(object):
                 if len(stream) > 1:
                     episode['description'] += f"_{stream[:3].upper()}"
                 playlist_data.append(episode)
-
-        self.current_playlist = [self._parse_episode(
-            episodeData) for episodeData in playlist_data]
+        with click.progressbar(playlist_data, label="Parsing episodes", show_percent=False, show_eta=False, show_pos=True) as pd:
+            self.current_playlist = [self._parse_episode(
+                episodeData) for episodeData in pd]
 
     def download(self, verbose: bool):
         for episode in self.playlist:
@@ -212,6 +212,9 @@ class AoDDownloader(object):
                     for chunkUrl in chunkList:
                         chunk_response = self.session.get(chunkUrl)
                         if chunk_response.status_code != 200:
+                            if chunk_response.status_code == 403:
+                                # The session might be timed out, try signing back in.
+                                self._sign_in()
                             # Retry download of chunk once.
                             chunk_response = self.session.get(chunkUrl)
                             if chunk_response.status_code != 200:
