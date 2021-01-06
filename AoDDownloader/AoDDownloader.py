@@ -214,9 +214,6 @@ class AoDDownloader(object):
                             click.echo("\n" + str(index) + "/" + str(chunkList.length))
                         chunk_response = self.session.get(chunkUrl)
                         if chunk_response.status_code != 200:
-                            if chunk_response.status_code == 403:
-                                # The session might be timed out, try signing back in.
-                                self._sign_in()
                             # Retry download of chunk once.
                             chunk_response = self.session.get(chunkUrl)
                             if chunk_response.status_code != 200:

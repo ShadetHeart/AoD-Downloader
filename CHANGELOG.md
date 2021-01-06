@@ -5,7 +5,7 @@
 - add escape of ffmpeg strings
 - add progressbar when parsing episodes
 - add direct arguments for login and download
-- add `no-buffer-output ` option to get a not buffered output
+- add `no-buffer-output` option to get a not buffered output
 - try signing in when 403 is thrown
 
 # 1.0.0rc5
