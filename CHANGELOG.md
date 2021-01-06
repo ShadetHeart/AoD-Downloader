@@ -4,7 +4,6 @@
 - add integer only support
 - add escape of ffmpeg strings
 - add progressbar when parsing episodes
-- try signing in when 403 is thrown
 
 # 1.0.0rc5
 - Use no temp file on windows because of permission errors
