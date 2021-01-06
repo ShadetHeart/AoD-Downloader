@@ -202,7 +202,7 @@ class AoDDownloader(object):
             self.current_playlist = [self._parse_episode(
                 episodeData) for episodeData in pd]
 
-    def download(self, verbose: bool):
+    def download(self, verbose: bool, noBuffer: bool):
         for episode in self.playlist:
             if episode.exists:
                 click.echo(f"{click.style(f'Skipping {episode.title}.', fg='green')} Already exists.")
@@ -210,6 +210,8 @@ class AoDDownloader(object):
             with tempfile.NamedTemporaryFile() if os.name != 'nt' else open(episode.file + ".ts", "w+b") as tmp:
                 with click.progressbar(episode.chunkList, label=f"Downloading {episode.title}:") as chunkList:
                     for chunkUrl in chunkList:
+                        if noBuffer:
+                            click.echo("")
                         chunk_response = self.session.get(chunkUrl)
                         if chunk_response.status_code != 200:
                             if chunk_response.status_code == 403:

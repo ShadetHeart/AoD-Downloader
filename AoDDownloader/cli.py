@@ -23,9 +23,11 @@ def cli():
               help='Try downloading japanese audio with german subtitles.')
 @click.option('-g', '--german', 'german', is_flag=True,
               help='Try downloading german audio.')
+@click.option('--no-buffer', 'noBuffer', is_flag=True,
+              help='Disable buffering for progress output.')
 @click.argument('url', default='')
 @click.argument('password', default='')
-def download(german, japanese, quality, verbose, url, password):
+def download(german, japanese, quality, verbose, url, password, noBuffer):
     """
     Download an anime.
     The files are downloaded in the current directory.
@@ -49,7 +51,7 @@ def download(german, japanese, quality, verbose, url, password):
         downloader.config.german = german
     try:
         downloader.set_playlist(anime_url, verbose)
-        downloader.download(verbose)
+        downloader.download(verbose, noBuffer)
     except _AoDDownloader.AoDDownloaderException as e:
         click.echo(f"{click.style('Error:', fg='red')} {e}")
 
