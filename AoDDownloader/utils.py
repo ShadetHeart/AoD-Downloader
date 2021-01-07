@@ -17,10 +17,7 @@ def create_downloader(password) -> AoD.AoDDownloader:
                 click.echo(
                     "Keyring is not accessible.\n \"pip install dbus-python\" might fix this problem.")
         else:
-            if password:
-                config.password = password
-            else:
-                config.password = click.prompt('Password', hide_input=True)
+            config.password = password if password else click.prompt('Password', hide_input=True)
     return AoD.AoDDownloader(config=config)
 
 
@@ -39,7 +36,7 @@ def create_login(use_keyring: bool = True, username: str = '', password: str = '
         click.echo(e)
         return
     if not aod.signed_in:
-        click.echo("Login fehlgeschlagen.")
+        click.echo("Login failed.")
         return
 
     if use_keyring:
@@ -51,7 +48,7 @@ def create_login(use_keyring: bool = True, username: str = '', password: str = '
 "pip install dbus-python" might fix this problem.
 Or use --no-keyring to enter password every time and disable keyring""")
     config.write()
-    click.echo("Login erfolgreich.")
+    click.echo("Login successfull.")
 
 
 def remove_login():
