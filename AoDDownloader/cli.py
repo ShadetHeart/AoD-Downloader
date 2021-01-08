@@ -23,13 +23,23 @@ def cli():
               help='Try downloading japanese audio with german subtitles.')
 @click.option('-g', '--german', 'german', is_flag=True,
               help='Try downloading german audio.')
-def download(german, japanese, quality, verbose):
+@click.option('--no-buffer-output', 'noBufferOutput', is_flag=True,
+              help='Disable buffering for progress output.')
+@click.argument('url', default='')
+@click.argument('password', default='')
+def download(german, japanese, quality, verbose, url, password, noBufferOutput):
     """
     Download an anime.
     The files are downloaded in the current directory.
     """
-    downloader = create_downloader()
-    anime_url = click.prompt('Enter anime url or id to download')
+    if password:
+        downloader = create_downloader(password)
+    else:
+        downloader = create_downloader()
+    if url:
+        anime_url= url
+    else:
+        anime_url = click.prompt('Enter anime url or id to download')
     if quality:
         if verbose:
             click.echo(f"Override quality settings")
@@ -41,7 +51,7 @@ def download(german, japanese, quality, verbose):
         downloader.config.german = german
     try:
         downloader.set_playlist(anime_url, verbose)
-        downloader.download(verbose)
+        downloader.download(verbose, noBufferOutput)
     except _AoDDownloader.AoDDownloaderException as e:
         click.echo(f"{click.style('Error:', fg='red')} {e}")
 
@@ -49,11 +59,16 @@ def download(german, japanese, quality, verbose):
 @cli.command()
 @click.option('--no-keyring', 'no_keyring', is_flag=True,
               help='Deactivate keyring option for systems who have no accessible keyring')
-def login(no_keyring):
+@click.argument('name', default='')
+@click.argument('password', default='')
+def login(no_keyring, name, password):
     """
     Login to anime-on-demand.de and save credentials
     """
-    create_login(use_keyring=not no_keyring)
+    if name and password:
+        create_login(not no_keyring, name, password)
+    else:
+        create_login(not no_keyring)
 
 
 @cli.command()
