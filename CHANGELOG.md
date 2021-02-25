@@ -7,6 +7,7 @@
 - add direct arguments for login and download
 - add `no-buffer-output` option to get a not buffered output
 - try signing in when 403 is thrown
+- change .ts file name to be always `temp`
 
 # 1.0.0rc5
 - Use no temp file on windows because of permission errors

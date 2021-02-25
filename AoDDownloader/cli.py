@@ -25,8 +25,8 @@ def cli():
               help='Try downloading german audio.')
 @click.option('--no-buffer-output', 'noBufferOutput', is_flag=True,
               help='Disable buffering for progress output.')
+@click.option('-p', '--password', 'password', default='')
 @click.argument('url', default='')
-@click.argument('password', default='')
 def download(german, japanese, quality, verbose, url, password, noBufferOutput):
     """
     Download an anime.
