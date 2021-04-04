@@ -6,7 +6,7 @@ import AoDDownloader as AoD
 from .config import Config
 
 
-def create_downloader(password) -> AoD.AoDDownloader:
+def create_downloader(password="") -> AoD.AoDDownloader:
     config = Config()
 
     if config.username:
