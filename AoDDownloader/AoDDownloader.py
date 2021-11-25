@@ -224,7 +224,7 @@ class AoDDownloader(object):
                 try:
                     input_name = self.escape_string_for_ffmpeg(tmp.name)
                     output_name = self.escape_string_for_ffmpeg(episode.file)
-                    ffmpeg.input(input_name, **{'codec': copy}).output(output_name).run(capture_stderr=not verbose)
+                    ffmpeg.input(input_name).output(output_name, acodec='copy',vcodec='copy').run(capture_stderr=not verbose)
                 except FileNotFoundError:
                     raise AoDDownloaderException("ffmpeg is not installed. Please install ffmpeg")
                 click.echo(click.style(f"Finished {episode.title}", fg='green'))
